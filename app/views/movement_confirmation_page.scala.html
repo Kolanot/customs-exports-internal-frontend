@@ -14,35 +14,48 @@
  * limitations under the License.
  *@
 
-@import forms.ConsignmentReferences
-@import models.cache.JourneyType.JourneyType
-@import views.Title
-@import views.html.templates.main_template
+@*
+* Copyright 2020 HM Revenue & Customs
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*@
 
-@this(main_template: main_template)
+@import forms.ConsignmentReferences
+@import models.cache.JourneyType
+@import models.cache.JourneyType.JourneyType
+@import forms.ConsignmentReferenceType
+@import views.Title
+@import components.gds.gds_main_template
+@import views.html.templates.main_template
+@import uk.gov.hmrc.govukfrontend.views.html.components._
+
+@* this(main_template: main_template) *@
+@this(
+    govukLayout: gds_main_template,
+    govukPanel : GovukPanel,
+    formHelper: uk.gov.hmrc.play.views.html.helpers.FormWithCSRF
+)
 
 @* TODO remove consignmentReferences: ConsignmentReferences when all pages are done *@
 @(journeyType: JourneyType, consignmentReferences: ConsignmentReferences)(implicit request: Request[_], messages: Messages)
 
 @gotoTimelineLink = {<a class="govuk-link" href="@routes.ChoiceController.displayPage()">@messages("movement.confirmation.notification.timeline.link")</a>}
 
-@main_template(
-    Title(s"movement.confirmation.title.${journeyType}")
-) {
+@govukLayout(title = Title(s"movement.confirmation.title.${journeyType}")) {
 
-  <h1 class="govuk-heading-xl">@messages(s"movement.confirmation.title.${journeyType}")</h1>
+    @govukPanel(Panel(
+        title = Text(messages(s"movement.confirmation.title.${journeyType}"))
+    ))
 
-  <div class="govuk-grid-row">
-      <div class="govuk-grid-column-two-thirds">
-          <div class="govuk-inset-text">
-              @messages("movement.confirmation.header")
-              <br>
-              @Html(messages("movement.confirmation.header.check", gotoTimelineLink))
-          </div>
-      </div>
-  </div>
-
-  <p class="govuk-body">
-      <a class="govuk-link" href="@routes.ChoiceController.displayPage()">@messages("movement.confirmation.redirect.link")</a>
-  </p>
+    @components.button_link("site.backToStart", routes.ChoiceController.displayPage())
 }
