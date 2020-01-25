@@ -16,17 +16,18 @@
 
 package views.movement
 
+import base.Injector
 import forms.{ConsignmentReferenceType, ConsignmentReferences}
 import models.cache.{ArrivalAnswers, JourneyType}
 import views.ViewSpec
 import views.html.movement_confirmation_page
 
-class MovementConfirmationArrivalViewSpec extends ViewSpec {
+class MovementConfirmationArrivalViewSpec extends ViewSpec with Injector {
 
   private implicit val request = journeyRequest(ArrivalAnswers())
 
   private val consignmentReferences = ConsignmentReferences(ConsignmentReferenceType.D, "9GB12345678")
-  private val page = new movement_confirmation_page(main_template)
+  private val page = instanceOf[movement_confirmation_page]
 
   "MovementConfirmationArrivalView" when {
 
@@ -40,28 +41,23 @@ class MovementConfirmationArrivalViewSpec extends ViewSpec {
       "render header" in {
 
         page(JourneyType.ARRIVE, consignmentReferences)
-          .getElementsByClass("govuk-heading-xl").first() must containMessage("movement.confirmation.title.ARRIVE", "DUCR", "9GB12345678")
+          .getElementsByClass("govuk-heading-xl")
+          .first() must containMessage("movement.confirmation.title.ARRIVE", "DUCR", "9GB12345678")
       }
 
-      "have go to timeline link" in {
-
-        val inset = page(JourneyType.ARRIVE, consignmentReferences).getElementsByClass("govuk-inset-text").first()
-        val findGotoTimelineLink = inset.getElementsByClass("govuk-link").first()
-
-        findGotoTimelineLink must containMessage("movement.confirmation.notification.timeline.link")
-        findGotoTimelineLink must haveHref(controllers.routes.ChoiceController.displayPage())
+      "have 'notification timeline' link" in {
+        val inset = page(JourneyType.RETROSPECTIVE_ARRIVE, consignmentReferences).getElementsByClass("govuk-inset-text").first()
+        inset
+          .getElementsByClass("govuk-link")
+          .first() must haveHref(controllers.routes.ViewSubmissionsController.displayPage())
       }
 
-      "have find another consignment link" in {
-
-        val body = page(JourneyType.ARRIVE, consignmentReferences).getElementsByClass("govuk-body").first()
-        val findConsignmentLink = body.getElementsByClass("govuk-link").first()
-
-        findConsignmentLink must containMessage("movement.confirmation.redirect.link")
-        findConsignmentLink must haveHref(controllers.routes.ChoiceController.displayPage())
+      "have 'find another consignment' link" in {
+        page(JourneyType.RETROSPECTIVE_ARRIVE, consignmentReferences)
+          .getElementsByClass("govuk-link")
+          .get(1) must haveHref(controllers.routes.ChoiceController.displayPage())
       }
     }
   }
-
 
 }
