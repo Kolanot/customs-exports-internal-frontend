@@ -93,19 +93,22 @@ class IleQueryController @Inject()(
       }
     }
 
-  private def loadingPageResult()(implicit request: Request[AnyContent]) =
+  private def loadingPageResult()(implicit request: Request[AnyContent]): Result =
     Ok(loadingScreenPage()).withHeaders("refresh" -> "5")
 
   private def processQueryResults(queryResponse: IleQueryResponseExchange)(implicit request: AuthenticatedRequest[AnyContent]): Result =
     queryResponse.data match {
-      case response: SuccessfulResponseExchangeData =>
-        val queriedUcr = response.queriedMucr.map(q => UcrBlock(q.ucr, "M")).orElse(response.queriedDucr.map(q => UcrBlock(q.ucr, "D")))
-        queriedUcr.foreach(ucr => cacheRepository.upsert(Cache(request.providerId, ucr)))
+      case response: SuccessfulResponseExchangeData => {
+        saveQueriedUcrBlock(response)
+          .map(_ => {
 
-        val ducrResult = response.queriedDucr.map(ducr => Ok(ileQueryDucrResponsePage(ducr, response.parentMucr)))
-        val mucrResult = response.queriedMucr.map(mucr => Ok(ileQueryMucrResponsePage(mucr, response.parentMucr, response.sortedChildrenUcrs)))
+            val ducrResult = response.queriedDucr.map(ducr => Ok(ileQueryDucrResponsePage(ducr, response.parentMucr)))
+            val mucrResult = response.queriedMucr.map(mucr => Ok(ileQueryMucrResponsePage(mucr, response.parentMucr, response.sortedChildrenUcrs)))
 
-        ducrResult.orElse(mucrResult).getOrElse(loadingPageResult)
+            ducrResult.orElse(mucrResult).getOrElse(loadingPageResult)
+          })
+          .getOrElse(loadingPageResult())
+      }
 
       case response: UcrNotFoundResponseExchangeData =>
         response.ucrBlock match {
@@ -113,6 +116,14 @@ class IleQueryController @Inject()(
           case _                      => InternalServerError(errorHandler.standardErrorTemplate())
         }
     }
+
+  private def saveQueriedUcrBlock(
+    response: SuccessfulResponseExchangeData
+  )(implicit request: AuthenticatedRequest[AnyContent]): Option[Future[Cache]] =
+    response.queriedMucr
+      .map(q => UcrBlock(q.ucr, "M"))
+      .orElse(response.queriedDucr.map(q => UcrBlock(q.ucr, "D")))
+      .map(block => cacheRepository.upsert(Cache(request.providerId, block)))
 
   private def sendIleQuery(ucr: String)(implicit request: AuthenticatedRequest[AnyContent]): Future[Result] =
     form
